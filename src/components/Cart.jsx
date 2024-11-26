@@ -2,123 +2,116 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CustomOrderForm from './CustomOrderForm';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const Cart = () => {
-    const [cartItems, setCartItems] = useState([]);
+    const [containers, setContainers] = useState([]);
     const navigate = useNavigate();
 
-    const addToCart = (container) => {
-        if (!container.food_items || container.food_items.length === 0) {
-            console.error('No food items in container');
-            return;
-        }
-
-        container.food_items.forEach(item => {
-            if (!item.food_name) {
-                console.error('Food item missing name');
-                return;
-            }
-
-            setCartItems(prev => [...prev, {
-                name: item.food_name,
-                price: parseFloat(item.price) || 0,
-                quantity: parseInt(item.quantity) || 1,
-                packaging_type: container.packaging_type || 'standard',
-                message: container.message || '',
-                special_instructions: item.special_instructions || ''
-            }]);
-        });
+    const addContainer = (newContainer) => {
+        setContainers(prev => [...prev, newContainer]);
     };
 
-    const removeFromCart = (id) => {
-        setCartItems(cartItems.filter(item => item.id !== id));
+    const removeContainer = (containerIndex) => {
+        setContainers(prev => prev.filter((_, index) => index !== containerIndex));
     };
 
     const submitOrder = async () => {
         try {
-            // Validate cart items
-            if (cartItems.length === 0) {
-                console.error('Cart is empty');
-                return;
-            }
-
             const orderData = {
-                containers: [{
-                    packaging_type: cartItems[0]?.packaging_type || 'standard',
-                    message: cartItems[0]?.message || '',
-                    food_items: cartItems.map(item => ({
-                        food_name: item.name || 'Unknown Item',  // Ensure food_name is present
-                        price: parseFloat(item.price) || 0,
-                        quantity: parseInt(item.quantity) || 1
-                    }))
-                }]
+                containers: containers.reduce((acc, container, index) => {
+                    acc[`container_${index}`] = {
+                        packaging_type: container.packaging_type,
+                        message: container.message,
+                        FoodItems: container.food_items
+                    };
+                    return acc;
+                }, {})
             };
 
-            console.log('Order Data:', JSON.stringify(orderData, null, 2));
+            console.log('Order data being sent:', JSON.stringify(orderData, null, 2));
             
             const response = await axios.post('http://127.0.0.1:5000/cards', orderData);
             
-            if (response.status === 201) {
-                console.log('Order submitted successfully:', response.data);
-                setCartItems([]); // Clear cart
-                navigate('/order-confirmation', { 
-                    state: { orderId: response.data.order_id } 
-                });
-            }
+            toast.success(`Order placed successfully! Order ID: ${response.data.order_id}`);
+            
+            setContainers([]);
+            
         } catch (error) {
-            console.error('Error details:', {
-                message: error.message,
-                response: error.response?.data,
-                data: error.response?.data
-            });
+            console.log('Error details:', error);
+            toast.error('Failed to place order. Please try again.');
         }
     };
 
+    const calculateTotal = () => {
+        return containers.reduce((total, container) => {
+            const containerTotal = container.food_items.reduce((sum, item) => 
+                sum + (parseFloat(item.price) * item.quantity), 0
+            );
+            return total + containerTotal;
+        }, 0).toFixed(2);
+    };
+
     return (
-        <div className="container mx-auto p-4">
+        <div className="container mx-auto px-4 py-8">
             <h2 className="text-2xl font-bold mb-6">Your Order</h2>
-            
-            {/* Custom Order Form */}
+
+            {/* Form to add new container */}
             <div className="mb-8">
-                <h3 className="text-xl mb-4">Add Custom Item</h3>
-                <CustomOrderForm onAddToCart={addToCart} />
+                <h3 className="text-xl font-semibold mb-4">Add New Container</h3>
+                <CustomOrderForm onAddToCart={addContainer} />
             </div>
 
-            {/* Cart Items */}
-            <div className="space-y-4">
-                {cartItems.map(item => (
-                    <div key={item.id} className="flex justify-between items-center p-4 border rounded">
-                        <div>
-                            <h4 className="font-bold">{item.food_name}</h4>
-                            <p className="text-sm text-gray-600">
-                                Quantity: {item.quantity} × ${item.price}
-                            </p>
-                            {item.special_instructions && (
-                                <p className="text-sm text-gray-500">
-                                    Note: {item.special_instructions}
-                                </p>
-                            )}
-                        </div>
+            {/* Display existing containers */}
+            {containers.map((container, containerIndex) => (
+                <div key={containerIndex} className="mb-6 p-4 border rounded-lg bg-white shadow">
+                    <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-semibold">
+                            {container.packaging_type} #{containerIndex + 1}
+                        </h4>
                         <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-red-500"
+                            onClick={() => removeContainer(containerIndex)}
+                            className="text-red-500 hover:text-red-700"
                         >
-                            Remove
+                            Remove Container
                         </button>
                     </div>
-                ))}
-            </div>
 
-            {cartItems.length > 0 && (
-                <div className="mt-8">
+                    {/* Display items in this container */}
+                    {container.food_items.map((item, itemIndex) => (
+                        <div key={itemIndex} className="ml-4 mb-2 p-2 border-b">
+                            <div className="flex justify-between">
+                                <span>{item.food_name}</span>
+                                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                                Quantity: {item.quantity}
+                                {item.special_instructions && (
+                                    <p className="text-xs italic">
+                                        Note: {item.special_instructions}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+
+                    {container.message && (
+                        <p className="mt-2 text-sm text-gray-600 italic">
+                            Message: {container.message}
+                        </p>
+                    )}
+                </div>
+            ))}
+
+            {/* Order summary and submit button */}
+            {containers.length > 0 && (
+                <div className="mt-8 p-4 bg-gray-50 rounded-lg">
                     <div className="text-xl font-bold mb-4">
-                        Total: ${cartItems.reduce((sum, item) => 
-                            sum + (parseFloat(item.price) * item.quantity), 0
-                        ).toFixed(2)}
+                        Total: ${calculateTotal()}
                     </div>
                     <button
                         onClick={submitOrder}
-                        className="w-full bg-blue-600 text-white py-3 rounded"
+                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200"
                     >
                         Place Order
                     </button>

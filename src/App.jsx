@@ -5,19 +5,24 @@ import Menu from './components/Menu';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import OrderConfirmation from './components/OrderConfirmation';
+import { Toaster } from 'react-hot-toast';
+
 function App() {
  return (
-   <Router>
-     <div className="min-h-screen bg-gray-50">
-       <Navbar />
-       <Routes>
-         <Route path="/" element={<Menu />} />
-         <Route path="/cart" element={<Cart />} />
-         <Route path="/checkout" element={<Checkout />} />
-         <Route path="/confirmation" element={<OrderConfirmation />} />
-       </Routes>
-     </div>
-   </Router>
+   <>
+     <Toaster position="top-right" />
+     <Router>
+       <div className="min-h-screen bg-gray-50">
+         <Navbar />
+         <Routes>
+           <Route path="/" element={<Menu />} />
+           <Route path="/cart" element={<Cart />} />
+           <Route path="/checkout" element={<Checkout />} />
+           <Route path="/confirmation" element={<OrderConfirmation />} />
+         </Routes>
+       </div>
+     </Router>
+   </>
  );
 };
 export default App;
