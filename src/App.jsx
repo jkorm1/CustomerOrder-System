@@ -3,8 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
-import Checkout from './components/Checkout';
-import OrderConfirmation from './components/OrderConfirmation';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -17,8 +15,6 @@ function App() {
          <Routes>
            <Route path="/" element={<Menu />} />
            <Route path="/cart" element={<Cart />} />
-           <Route path="/checkout" element={<Checkout />} />
-           <Route path="/confirmation" element={<OrderConfirmation />} />
          </Routes>
        </div>
      </Router>

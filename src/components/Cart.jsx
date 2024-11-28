@@ -1,124 +1,106 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import CustomOrderForm from './CustomOrderForm';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { toast } from "react-hot-toast";
 
 const Cart = () => {
-    const [containers, setContainers] = useState([]);
-    const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const addContainer = (newContainer) => {
-        setContainers(prev => [...prev, newContainer]);
-    };
+  useEffect(() => {
+    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartItems(savedCart);
+  }, []);
 
-    const removeContainer = (containerIndex) => {
-        setContainers(prev => prev.filter((_, index) => index !== containerIndex));
-    };
+  const handleSubmitOrder = async () => {
+    try {
+      setIsLoading(true);
 
-    const submitOrder = async () => {
-        try {
-            const orderData = {
-                containers: containers.reduce((acc, container, index) => {
-                    acc[`container_${index}`] = {
-                        packaging_type: container.packaging_type,
-                        message: container.message,
-                        FoodItems: container.food_items
-                    };
-                    return acc;
-                }, {})
-            };
+      // Format cart items for submission
+      const orderData = {
+        order_type: 'customer_online',
+        payment: 'pending',
+        location: 'Online Order',
+        containers: cartItems.map(item => ({
+          container_number: 1,
+          packaging_type: item.packaging_type,
+          message: '',
+          FoodItems: [{
+            food_name: item.food_name,
+            Price: item.price
+          }]
+        }))
+      };
 
-            console.log('Order data being sent:', JSON.stringify(orderData, null, 2));
-            
-            const response = await axios.post('http://127.0.0.1:5000/cards', orderData);
-            
-            toast.success(`Order placed successfully! Order ID: ${response.data.order_id}`);
-            
-            setContainers([]);
-            
-        } catch (error) {
-            console.log('Error details:', error);
-            toast.error('Failed to place order. Please try again.');
-        }
-    };
+      const response = await fetch('http://localhost:5000/api/submit-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
 
-    const calculateTotal = () => {
-        return containers.reduce((total, container) => {
-            const containerTotal = container.food_items.reduce((sum, item) => 
-                sum + (parseFloat(item.price) * item.quantity), 0
-            );
-            return total + containerTotal;
-        }, 0).toFixed(2);
-    };
+      if (!response.ok) {
+        throw new Error('Failed to submit order');
+      }
 
-    return (
-        <div className="container mx-auto px-4 py-8">
-            <h2 className="text-2xl font-bold mb-6">Your Order</h2>
+      // Clear cart after successful submission
+      localStorage.removeItem('cart');
+      setCartItems([]);
+      toast.success('Order submitted successfully!');
 
-            {/* Form to add new container */}
-            <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-4">Add New Container</h3>
-                <CustomOrderForm onAddToCart={addContainer} />
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast.error('Failed to submit order');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => total + parseFloat(item.price), 0).toFixed(2);
+  };
+
+  return (
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
+      
+      {cartItems.length === 0 ? (
+        <p className="text-gray-500">Your cart is empty</p>
+      ) : (
+        <>
+          {cartItems.map((item, index) => (
+            <Card key={index} className="mb-4">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">{item.food_name}</h3>
+                    <p className="text-sm text-gray-600">₵{item.price}</p>
+                    <p className="text-sm text-gray-600">{item.packaging_type}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          <div className="mt-4 border-t pt-4">
+            <div className="flex justify-between mb-4">
+              <span className="font-bold">Total:</span>
+              <span className="font-bold">₵{calculateTotal()}</span>
             </div>
 
-            {/* Display existing containers */}
-            {containers.map((container, containerIndex) => (
-                <div key={containerIndex} className="mb-6 p-4 border rounded-lg bg-white shadow">
-                    <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-lg font-semibold">
-                            {container.packaging_type} #{containerIndex + 1}
-                        </h4>
-                        <button
-                            onClick={() => removeContainer(containerIndex)}
-                            className="text-red-500 hover:text-red-700"
-                        >
-                            Remove Container
-                        </button>
-                    </div>
-
-                    {/* Display items in this container */}
-                    {container.food_items.map((item, itemIndex) => (
-                        <div key={itemIndex} className="ml-4 mb-2 p-2 border-b">
-                            <div className="flex justify-between">
-                                <span>{item.food_name}</span>
-                                <span>${(item.price * item.quantity).toFixed(2)}</span>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                                Quantity: {item.quantity}
-                                {item.special_instructions && (
-                                    <p className="text-xs italic">
-                                        Note: {item.special_instructions}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-
-                    {container.message && (
-                        <p className="mt-2 text-sm text-gray-600 italic">
-                            Message: {container.message}
-                        </p>
-                    )}
-                </div>
-            ))}
-
-            {/* Order summary and submit button */}
-            {containers.length > 0 && (
-                <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                    <div className="text-xl font-bold mb-4">
-                        Total: ${calculateTotal()}
-                    </div>
-                    <button
-                        onClick={submitOrder}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200"
-                    >
-                        Place Order
-                    </button>
-                </div>
-            )}
-        </div>
-    );
+            <Button 
+              className="w-full" 
+              onClick={handleSubmitOrder}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Submitting...' : 'Place Order'}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 export default Cart;
