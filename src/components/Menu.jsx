@@ -16,7 +16,7 @@ const Menu = () => {
   const fetchMenuItems = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/menu-items');
+      const response = await fetch('http://localhost:5000/api/menu-items?is_ordered=false');
       if (!response.ok) {
         throw new Error('Failed to fetch menu items');
       }

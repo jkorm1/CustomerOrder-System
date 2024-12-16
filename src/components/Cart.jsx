@@ -32,7 +32,7 @@ const Cart = () => {
         }))
       };
 
-      const response = await fetch('http://localhost:5000/api/submit-order', {
+      const response = await fetch('http://localhost:5000/api/submit-order?is_ordered=true', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
