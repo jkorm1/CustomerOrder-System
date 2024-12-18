@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
 import { Toaster } from 'react-hot-toast';
+import './app.css';
 
 function App() {
  return (

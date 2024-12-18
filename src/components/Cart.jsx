@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [orderMessage, setOrderMessage] = useState("");
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -24,7 +25,7 @@ const Cart = () => {
         containers: cartItems.map(item => ({
           container_number: 1,
           packaging_type: item.packaging_type,
-          message: '',
+          message: orderMessage,
           FoodItems: [{
             food_name: item.food_name,
             Price: item.price
@@ -83,6 +84,14 @@ const Cart = () => {
             </Card>
           ))}
 
+        <div className="mt-4">
+            {/* Input field for order message */} 
+            <textarea className="w-full border p-2 rounded-md mb-4" 
+              placeholder="Add a message to your order..." 
+              value={orderMessage}
+              onChange={(e) => setOrderMessage(e.target.value)} 
+            />
+
           <div className="mt-4 border-t pt-4">
             <div className="flex justify-between mb-4">
               <span className="font-bold">Total:</span>
@@ -96,6 +105,7 @@ const Cart = () => {
             >
               {isLoading ? 'Submitting...' : 'Place Order'}
             </Button>
+          </div>
           </div>
         </>
       )}

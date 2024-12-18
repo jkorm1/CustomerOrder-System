@@ -3,14 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingCart, 
   ChefHat,
-  Coffee,
   Utensils,
-  Home,
-  Menu as MenuIcon
+  MenuIcon
 } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
+
+  // Function to get the number of items in the cart
+  const getCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    return cart.reduce((total, item) => total + (item.quantity || 1), 0); // Adjust if you have quantity in cart items
+  };
 
   return (
     <nav className="bg-white shadow-lg">
@@ -36,14 +40,12 @@ const Navbar = () => {
             
             <Link 
               to="/cart" 
-              className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors relative"
             >
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
-              </div>
+              <ShoppingCart className="h-5 w-5" />
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {getCartCount()}
+              </span>
               <span>Cart</span>
             </Link>
           </div>

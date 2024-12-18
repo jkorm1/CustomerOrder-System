@@ -62,3 +62,20 @@ button:hover {
   font-family: 'Outfit';
 };
 
+.card {
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card img {
+  border-radius: 0.5rem;
+}
+
+.card-content {
+  padding: 1rem;
+  text-align: center;
+}
+
